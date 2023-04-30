@@ -1,0 +1,6 @@
+[submodule "3p/lmdb"]
+	path = 3p/lmdb
+	url = https://github.com/LMDB/lmdb.git
+[submodule "3p/googletest"]
+	path = 3p/googletest
+	url = https://github.com/google/googletest.git

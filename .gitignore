@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+# Executable dir
+bin/
+
+# Coverage dir
+build/
+coverage/
+
+# Coverage/profiling artifacts
+*.gcda
+*.gcno
+*.gcov
