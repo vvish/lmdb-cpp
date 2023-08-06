@@ -1,0 +1,35 @@
+name: CMake
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CXX_COMPILER: g++-12
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+    runs-on: ubuntu-latest
+    env:
+      BUILD_DIR: ${{github.workspace}}/build/${{matrix.build_type}}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=${{env.CXX_COMPILER}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+
+    - name: Build
+      run: cmake --build ${{env.BUILD_DIR}} --config ${{matrix.build_type}}
+
+    - name: Test
+      working-directory: ${{env.BUILD_DIR}}
+      run: ctest -C ${{env.BUILD_TYPE}}
+
