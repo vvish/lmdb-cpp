@@ -16,4 +16,6 @@ target_link_libraries(unit_tests gtest gmock gtest_main lmdb)
 target_compile_options(unit_tests PRIVATE -O0 --coverage -g)
 target_link_options(unit_tests PRIVATE --coverage)
 
-add_test(NAME unit_tests COMMAND unit_tests)
+include(GoogleTest)
+gtest_discover_tests(unit_tests)
+
