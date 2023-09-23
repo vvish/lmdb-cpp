@@ -24,6 +24,6 @@ include_directories(include)
 
 add_subdirectory(test/unit)
 add_subdirectory(test/integration)
-add_subdirectory(test/link_layer_substitution_example)
+add_subdirectory(test/link_time_substitution_example)
 
 enable_testing()
