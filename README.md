@@ -15,5 +15,5 @@ Repository has the following primary directories:
 
 * include/cpp_lmdb - library code
 * test/unit - wrapper unit tests with compile-time LMDB mock injection
-* test/link_layer_substitution_example - example of unit tests with link-time LMDB mock injection
+* test/link_time_substitution_example - example of unit tests with link-time LMDB mock injection
 * test/integration - integration tests (bindings and LMDB)
