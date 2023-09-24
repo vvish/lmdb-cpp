@@ -24,7 +24,7 @@ class rw_db;
 
 template <
     key_value_trait KeyValueTrait,
-    read_only_t read_only,
+    read_only_t ReadOnly,
     lmdb_api_like LmdbApi>
 class transaction {
     friend class rw_db<KeyValueTrait, LmdbApi>;
@@ -52,7 +52,7 @@ public:
 
     auto try_insert(key_type const &key, value_type const &value) noexcept
         -> std::expected<void, error_t>
-        requires(read_only == read_only_t::no)
+        requires(ReadOnly == read_only_t::no)
     {
         return insert_impl(key, value, MDB_NOOVERWRITE);
     }
@@ -61,7 +61,7 @@ public:
         key_type const &key, value_type const &value) noexcept
         -> std::expected<void, error_t>
         requires(
-            read_only == read_only_t::no
+            ReadOnly == read_only_t::no
             && details::key_value_trait_helper<
                 KeyValueTrait>::duplicates_enabled)
     {
@@ -70,7 +70,7 @@ public:
 
     auto insert(key_type const &key, value_type const &value) noexcept
         -> std::expected<void, error_t>
-        requires(read_only == read_only_t::no)
+        requires(ReadOnly == read_only_t::no)
     {
         return insert_impl(key, value, 0);
     }

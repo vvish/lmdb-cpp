@@ -65,23 +65,23 @@ public:
 protected:
     using LmdbApiType = std::remove_reference_t<LmdbApi>;
 
-    template <key_value_trait KeyValueTrait, read_only_t read_only>
+    template <key_value_trait KeyValueTrait, read_only_t ReadOnly>
     using open_db_result = std::expected<
         std::conditional_t<
-            read_only == read_only_t::yes,
+            ReadOnly == read_only_t::yes,
             ro_db<KeyValueTrait, LmdbApiType>,
             rw_db<KeyValueTrait, LmdbApiType>>,
         error_t>;
 
-    template <key_value_trait KeyValueTrait, read_only_t read_only>
+    template <key_value_trait KeyValueTrait, read_only_t ReadOnly>
     auto open_db(
         char const *const name,
         create_if_not_exists const create_flag
         = create_if_not_exists::no) const
-        -> open_db_result<KeyValueTrait, read_only>
+        -> open_db_result<KeyValueTrait, ReadOnly>
     {
         auto &api = _env.get_deleter().api;
-        auto transaction = make_tx(api, *_env, read_only);
+        auto transaction = make_tx(api, *_env, ReadOnly);
         if (!transaction)
             return std::unexpected{error_t{transaction.error()}};
 
@@ -112,7 +112,7 @@ protected:
             !result)
             return std::unexpected{error_t{result.error()}};
 
-        return typename open_db_result<KeyValueTrait, read_only>::value_type{
+        return typename open_db_result<KeyValueTrait, ReadOnly>::value_type{
             api, db_index, *_env};
     }
 
@@ -163,9 +163,9 @@ public:
     }
 };
 
-template <read_only_t read_only, lmdb_api_like LmdbApi>
+template <read_only_t ReadOnly, lmdb_api_like LmdbApi>
 using environment_t = std::conditional_t<
-    read_only == read_only_t::yes,
+    ReadOnly == read_only_t::yes,
     ro_environment<LmdbApi>,
     rw_environment<LmdbApi>>;
 

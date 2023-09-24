@@ -27,18 +27,18 @@ public:
     {}
 
 protected:
-    template <read_only_t read_only>
-    using transaction = transaction<KeyValueTrait, read_only, LmdbApi>;
+    template <read_only_t ReadOnly>
+    using transaction = transaction<KeyValueTrait, ReadOnly, LmdbApi>;
 
-    template <read_only_t read_only>
+    template <read_only_t ReadOnly>
     auto make_transaction() const
-        -> std::expected<transaction<read_only>, error_t>
+        -> std::expected<transaction<ReadOnly>, error_t>
     {
-        auto txn = details::make_tx<LmdbApi>(_api, _env, read_only);
+        auto txn = details::make_tx<LmdbApi>(_api, _env, ReadOnly);
         if (!txn)
             return std::unexpected{error_t{txn.error()}};
 
-        return transaction<read_only>{_db_index, std::move(txn.value())};
+        return transaction<ReadOnly>{_db_index, std::move(txn.value())};
     }
 
 private:
