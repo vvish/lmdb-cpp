@@ -170,7 +170,7 @@ using environment_t = std::conditional_t<
     rw_environment<LmdbApi>>;
 
 using db_file_mode_t = mdb_mode_t;
-constexpr db_file_mode_t default_file_mode{0600};
+inline constexpr db_file_mode_t default_file_mode{0600};
 
 template <
     env_flags_t flags,
