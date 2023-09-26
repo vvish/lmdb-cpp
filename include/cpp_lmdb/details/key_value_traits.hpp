@@ -25,7 +25,7 @@ constexpr bool has_cmp_fun_v = requires {
 };
 
 template <typename T>
-constexpr bool has_reversed_flag_v = requires { typename T::reversed_flag; };
+inline constexpr bool has_reversed_flag_v = requires { typename T::reversed_flag; };
 
 constexpr auto logical_nand(bool const lhs, bool const rhs) -> bool
 {
@@ -33,15 +33,15 @@ constexpr auto logical_nand(bool const lhs, bool const rhs) -> bool
 }
 
 template <typename T>
-constexpr bool has_valid_key_order_params_v
+inline constexpr bool has_valid_key_order_params_v
     = logical_nand(has_reversed_flag_v<T>, has_cmp_fun_v<T>);
 
 template <typename T>
-constexpr bool has_fixed_value_size_flag_v
+inline constexpr bool has_fixed_value_size_flag_v
     = requires { typename T::fixed_size_flag; };
 
 template <typename T>
-constexpr bool has_valid_value_order_params_v = logical_nand(
+inline constexpr bool has_valid_value_order_params_v = logical_nand(
     (has_reversed_flag_v<T> || has_fixed_value_size_flag_v<T>),
     has_cmp_fun_v<T>);
 
@@ -73,7 +73,7 @@ constexpr bool get_fixed_value_size_flag()
 }
 
 template <typename T>
-constexpr bool is_integer_type_v
+inline constexpr bool is_integer_type_v
     = std::is_same_v<T, unsigned int> || std::is_same_v<T, size_t>;
 
 }  // namespace details
