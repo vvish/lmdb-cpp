@@ -1,8 +1,8 @@
+cmake_minimum_required(VERSION 3.9)
+
 cmake_policy(SET CMP0048 NEW)
 
 project(cpp_lmdb VERSION 0.1)
-
-cmake_minimum_required(VERSION 3.9)
 
 set(3P_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3p)
 
