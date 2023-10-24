@@ -25,7 +25,7 @@ public:
     ro_iterator_stub(value_type item) : _item{std::move(item)}
     {}
 
-    auto operator*() const -> const_reference const
+    auto operator*() const -> const_reference
     {
         return _item;
     }
