@@ -78,6 +78,8 @@ TEST_F(test_create_db, open_rw_data_base_create_if_not_existent_trivial_values)
     auto const db = environment.open_rw_db<
         lmdb::unique_key<lmdb::trivial_trait<int>, lmdb::trivial_trait<int>>>(
         test_db_name, lmdb::create_if_not_exists::yes);
+    
+    ASSERT_TRUE(db);
 }
 
 struct test_duplicate_reversed_key_value_trait_helper {
@@ -202,5 +204,7 @@ TEST_F(test_create_db, open_rw_db_custom_cmp_fn)
     auto db
         = environment.open_rw_db<test_custom_order_fn_key_value_trait_helper>(
             test_db_name);
+
+    ASSERT_TRUE(db);
 }
 }  // namespace cpp_lmdb_tests
