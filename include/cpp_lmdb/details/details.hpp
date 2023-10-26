@@ -71,7 +71,7 @@ constexpr auto make_tx(
         return std::unexpected{result};
     }
 
-    return txn_unique_ptr_t{txn, details::txn_deleter<LmdbApi>{api}};
+    return txn_unique_ptr_t<LmdbApi>{txn, details::txn_deleter<LmdbApi>{api}};
 }
 
 template <typename LmdbApi>
@@ -111,7 +111,7 @@ constexpr auto make_cursor(
         return std::unexpected{result};
     }
 
-    return cursor_unique_ptr_t{cursor, cursor_deleter<LmdbApi>{api}};
+    return cursor_unique_ptr_t<LmdbApi>{cursor, cursor_deleter<LmdbApi>{api}};
 }
 
 }  // namespace lmdb::details
