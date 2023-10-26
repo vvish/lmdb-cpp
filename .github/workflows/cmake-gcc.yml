@@ -1,0 +1,51 @@
+name: CMake GCC
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CXX_COMPILER: g++-12
+  C_COMPILER: gcc-12
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+    runs-on: ubuntu-latest
+    env:
+      BUILD_DIR: ${{github.workspace}}/build/${{matrix.build_type}}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=${{env.CXX_COMPILER}} -DCMAKE_C_COMPILER=${{env.C_COMPILER}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+
+    - name: Build
+      run: cmake --build ${{env.BUILD_DIR}} --config ${{matrix.build_type}}
+
+    - name: Test
+      working-directory: ${{env.BUILD_DIR}}
+      run: ctest -C ${{env.BUILD_TYPE}}
+
+    - name: Generate coverage report
+      if: ${{matrix.build_type == 'Debug'}}
+      working-directory: ${{github.workspace}}
+      run: |
+        sudo apt-get install lcov
+        lcov --gcov-tool gcov-12 --base-directory . --directory ${{env.BUILD_DIR}} -c -o coverage.info
+        lcov --gcov-tool gcov-12 --remove coverage.info "test/*" -o coverage.info
+
+    - name: Upload coverage to Codecov
+      if: ${{matrix.build_type == 'Debug'}}
+      uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: true
+        verbose: true
+        files: coverage.info

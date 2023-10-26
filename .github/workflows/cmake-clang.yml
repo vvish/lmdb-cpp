@@ -1,4 +1,4 @@
-name: CMake
+name: CMake Clang
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 env:
-  CXX_COMPILER: g++-12
-  C_COMPILER: gcc-12
+  CXX_COMPILER: clang++-17
+  C_COMPILER: clang-17
 
 jobs:
   build:
@@ -24,6 +24,13 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Prepare environment
+      run: |
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
+        sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main' && \
+        sudo apt update && \
+        sudo apt-get install clang-17 lldb-17 lld-17 libc++-17-dev libc++abi-17-dev
+
     - name: Configure CMake
       run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=${{env.CXX_COMPILER}} -DCMAKE_C_COMPILER=${{env.C_COMPILER}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
@@ -33,19 +40,3 @@ jobs:
     - name: Test
       working-directory: ${{env.BUILD_DIR}}
       run: ctest -C ${{env.BUILD_TYPE}}
-
-    - name: Generate coverage report
-      if: ${{matrix.build_type == 'Debug'}}
-      working-directory: ${{github.workspace}}
-      run: |
-        sudo apt-get install lcov
-        lcov --gcov-tool gcov-12 --base-directory . --directory ${{env.BUILD_DIR}} -c -o coverage.info
-        lcov --gcov-tool gcov-12 --remove coverage.info "test/*" -o coverage.info
-
-    - name: Upload coverage to Codecov
-      if: ${{matrix.build_type == 'Debug'}}
-      uses: codecov/codecov-action@v3
-      with:
-        fail_ci_if_error: true
-        verbose: true
-        files: coverage.info
