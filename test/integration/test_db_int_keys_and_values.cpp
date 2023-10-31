@@ -1,5 +1,7 @@
 #include "cpp_lmdb/cpp_lmdb.hpp"
 
+#include "test_utils.hpp"
+
 // gtest
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -13,31 +15,13 @@ using namespace ::testing;  // NOLINT(google-build-using-namespace)
 namespace cpp_lmdb_tests
 {
 
-template <std::ranges::range R>
-auto to_vector(R &&range)
-{
-    std::vector<std::ranges::range_value_t<R>> result;
-    std::ranges::copy(std::forward<R>(range), std::back_inserter(result));
-
-    return result;
-}
-
 using test_trait = lmdb::
     unique_key<lmdb::trivial_trait<uint8_t>, lmdb::trivial_trait<uint32_t>>;
 
 using ro_view
     = lmdb::ro_environment<>::ro_db<test_trait>::ro_transaction::ro_view;
 
-auto get_all_values(ro_view const &view)
-{
-    auto const values
-        = std::ranges::ref_view{view}
-          | std::views::transform([](auto const &it) { return it.value(); });
-
-    return to_vector(values);
-}
-
-TEST(integration_test, db_operations_unique_key)
+TEST(integration_test, db_int_keys_and_values_unique_key)
 {
     constexpr auto test_env = "./test_env";
 
@@ -100,18 +84,10 @@ TEST(integration_test, db_operations_unique_key)
     {
         auto ro_tx = rw_db->begin_ro_transaction();
         ASSERT_TRUE(ro_tx);
-        {
-            auto const cursor = ro_tx->iterate();
-            auto values = std::ranges::ref_view{*cursor}
-                          | std::views::transform(
-                              [](auto const &it) { return it.value(); });
 
-            EXPECT_THAT(to_vector(values), ElementsAre(2000, 10000));
-
-            EXPECT_THAT(
-                get_all_values(ro_tx->iterate().value()),
-                ElementsAre(2000, 10000));
-        }
+        EXPECT_THAT(
+            cpp_lmdb_tests::get_all_values(ro_tx->iterate().value()),
+            ElementsAre(2000, 10000));
     }
 }
 

@@ -1,6 +1,7 @@
 add_executable(
     integrations_tests
-    test_db_operations.cpp 
+    test_db_int_keys_and_values.cpp
+    test_db_string_keys_and_values.cpp
 )
 
 enable_testing()
