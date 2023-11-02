@@ -38,6 +38,8 @@ public:
 
     using ro_view
         = db_view<ro_iterator<key_trait, value_trait, LmdbApi>, LmdbApi>;
+    using ro_lo_view
+        = db_dup_view<ro_iterator<key_trait, value_trait, LmdbApi>, LmdbApi>;
     using ro_dup_view = db_dup_view<
         ro_dup_iterator<key_trait, value_trait, LmdbApi>,
         LmdbApi>;
@@ -88,6 +90,17 @@ public:
         }
 
         return {};
+    }
+
+    auto lower_bound(key_type const &key) const noexcept
+        -> std::expected<ro_lo_view, error_t>
+    {
+        auto cursor = details::make_cursor(_api, _txn.get(), _db_index);
+        if (!cursor)
+            return std::unexpected{error_t{cursor.error()}};
+
+        auto const key_bytes = key_trait::to_bytes(key);
+        return ro_lo_view{std::move(*cursor), key_bytes};
     }
 
     auto get(key_type const &key) const noexcept
