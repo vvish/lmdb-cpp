@@ -231,12 +231,25 @@ TEST_F(test_transaction, trivial_types_transaction_iterate)
         EXPECT_CALL(api, mdb_cursor_open(test_txn, test_dbi, _))
             .WillOnce(DoAll(SetArgPointee<2>(cursor), Return(MDB_SUCCESS)));
 
+        EXPECT_CALL(
+            api,
+            mdb_cursor_get(
+                cursor,
+                _,
+                _,
+                MDB_FIRST))
+            .WillOnce(Return(MDB_SUCCESS));
+
         EXPECT_CALL(api, mdb_cursor_close(cursor));
         EXPECT_CALL(api, mdb_txn_abort(test_txn));
     }
 
     const auto result = transaction.iterate();
     ASSERT_TRUE(result);
+
+    auto const& db_view = *result;
+    auto const it = db_view.begin();
+    ASSERT_NE(it, db_view.end());
 }
 
 using test_trait_dup
@@ -244,6 +257,8 @@ using test_trait_dup
 
 TEST_F(test_transaction, trivial_types_dup_iterate_by_key)
 {
+    std::array<uint8_t, 4> test_value{0x30, 0x0, 0x0, 0x20};
+
     lmdb::transaction<
         test_trait_dup,
         lmdb::read_only_t::no,
@@ -258,12 +273,32 @@ TEST_F(test_transaction, trivial_types_dup_iterate_by_key)
         EXPECT_CALL(api, mdb_cursor_open(test_txn, test_dbi, _))
             .WillOnce(DoAll(SetArgPointee<2>(cursor), Return(MDB_SUCCESS)));
 
+        EXPECT_CALL(
+            api,
+            mdb_cursor_get(
+                cursor,
+                Pointee(MdbValBytesAre{0x78, 0x56, 0x34, 0x12}),
+                _,
+                MDB_FIRST_DUP))
+            .WillOnce(DoAll(
+                SetArgPointee<2>(
+                    MDB_val{test_value.size(), test_value.data()}),
+                Return(MDB_SUCCESS)));
+
         EXPECT_CALL(api, mdb_cursor_close(cursor));
         EXPECT_CALL(api, mdb_txn_abort(test_txn));
     }
 
-    const auto result = transaction.iterate();
+    const auto result = transaction.iterate_by_key(0x12345678);
     ASSERT_TRUE(result);
+
+    auto const& db_view = *result;
+    auto const it = db_view.begin();
+    ASSERT_NE(it, db_view.end());
+
+    auto const& db_item = *it;
+    EXPECT_EQ(db_item.key(), 0x12345678);
+    EXPECT_EQ(db_item.value(), 0x20000030);
 }
 
 }  // namespace cpp_lmdb_tests
