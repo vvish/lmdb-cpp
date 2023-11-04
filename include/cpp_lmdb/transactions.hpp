@@ -124,13 +124,11 @@ public:
         requires(
             details::key_value_trait_helper<KeyValueTrait>::duplicates_enabled)
     {
-        auto cursor = make_cursor(_api, _txn.get(), _db_index);
+        auto cursor = details::make_cursor(_api, _txn.get(), _db_index);
         if (!cursor)
             return std::unexpected{error_t{cursor.error()}};
 
         auto const key_bytes = key_trait::to_bytes(key);
-        auto mdb_key = to_mdb_val(key_bytes);
-
         return ro_dup_view{std::move(*cursor), key_bytes};
     }
 
