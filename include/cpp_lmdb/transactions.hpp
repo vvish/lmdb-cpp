@@ -3,8 +3,8 @@
 #include "cpp_lmdb/concepts.hpp"
 #include "cpp_lmdb/db_item.hpp"
 #include "cpp_lmdb/iterators.hpp"
-#include "cpp_lmdb/views.hpp"
 #include "cpp_lmdb/types.hpp"
+#include "cpp_lmdb/views.hpp"
 
 // details
 #include "cpp_lmdb/details/details.hpp"
@@ -15,7 +15,6 @@
 
 // std
 #include <concepts>
-#include <expected>
 
 namespace lmdb
 {
@@ -44,22 +43,22 @@ public:
 
 public:
     transaction(
-        MDB_dbi const db_index, details::txn_unique_ptr_t<LmdbApi> &&txn) noexcept
+        MDB_dbi const db_index,
+        details::txn_unique_ptr_t<LmdbApi> &&txn) noexcept
         : _db_index{db_index}
         , _txn{std::move(txn)}
         , _api{_txn.get_deleter().api}
     {}
 
-    auto try_insert(key_type const &key, value_type const &value) noexcept
-        -> std::expected<void, error_t>
+    auto try_insert(key_type const &key, value_type const &value) LMDB_NOEXCEPT
+        -> LMDB_RESULT(void)
         requires(ReadOnly == read_only_t::no)
     {
         return insert_impl(key, value, MDB_NOOVERWRITE);
     }
 
-    auto try_insert_duplicate(
-        key_type const &key, value_type const &value) noexcept
-        -> std::expected<void, error_t>
+    auto try_insert_duplicate(key_type const &key, value_type const &value)
+        LMDB_NOEXCEPT -> LMDB_RESULT(void)
         requires(
             ReadOnly == read_only_t::no
             && details::key_value_trait_helper<
@@ -68,15 +67,14 @@ public:
         return insert_impl(key, value, MDB_NODUPDATA);
     }
 
-    auto insert(key_type const &key, value_type const &value) noexcept
-        -> std::expected<void, error_t>
+    auto insert(key_type const &key, value_type const &value) LMDB_NOEXCEPT
+        -> LMDB_RESULT(void)
         requires(ReadOnly == read_only_t::no)
     {
         return insert_impl(key, value, 0);
     }
 
-    auto delete_key(key_type const &key) noexcept
-        -> std::expected<void, error_t>
+    auto delete_key(key_type const &key) LMDB_NOEXCEPT -> LMDB_RESULT(void)
     {
         auto const key_bytes = key_trait::to_bytes(key);
         auto mdb_key = to_mdb_val(key_bytes);
@@ -84,14 +82,14 @@ public:
         if (auto const result
             = _api.mdb_del(_txn.get(), _db_index, &mdb_key, nullptr);
             result != MDB_SUCCESS) {
-            return std::unexpected{error_t{result}};
+            LMDB_REPORT_ERROR(error_t{result});
         }
 
-        return {};
+        LMDB_REPORT_SUCCESS();
     }
 
-    auto get(key_type const &key) const noexcept
-        -> std::expected<value_type, error_t>
+    auto get(key_type const &key) const LMDB_NOEXCEPT
+        -> LMDB_RESULT(value_type)
         requires(!details::key_value_trait_helper<
                  KeyValueTrait>::duplicates_enabled)
     {
@@ -102,7 +100,7 @@ public:
         if (auto const result
             = _api.mdb_get(_txn.get(), _db_index, &mdb_key, &mdb_value);
             result != MDB_SUCCESS) {
-            return std::unexpected{error_t{result}};
+            LMDB_REPORT_ERROR(error_t{result});
         }
 
         return value_trait::from_bytes(details::to_byte_span(mdb_value));
@@ -110,54 +108,54 @@ public:
 
     // TODO: probably, if exceptions are not enabled, iterator should be
     // returned instead of view as error reporting from views will be limited
-    auto iterate() const noexcept -> std::expected<ro_view, error_t>
+    auto iterate() const LMDB_NOEXCEPT -> LMDB_RESULT(ro_view)
     {
-        auto cursor = details::make_cursor(_api, _txn.get(), _db_index);
-        if (!cursor)
-            return std::unexpected{error_t{cursor.error()}};
+        auto cursor_or_error
+            = details::make_cursor(_api, _txn.get(), _db_index);
 
-        return ro_view{std::move(*cursor)};
+        auto const make_ro_view = [](auto &&cursor) -> LMDB_RESULT(ro_view) {
+            return ro_view{std::move(cursor)};
+        };
+
+        return LMDB_AND_THEN(std::move(cursor_or_error), make_ro_view);
     }
 
-    auto iterate_by_key(key_type const &key) const noexcept
-        -> std::expected<ro_dup_view, error_t>
+    auto iterate_by_key(key_type const &key) const LMDB_NOEXCEPT
+        -> LMDB_RESULT(ro_dup_view)
         requires(
             details::key_value_trait_helper<KeyValueTrait>::duplicates_enabled)
     {
-        auto cursor = details::make_cursor(_api, _txn.get(), _db_index);
-        if (!cursor)
-            return std::unexpected{error_t{cursor.error()}};
+        auto cursor_or_error
+            = details::make_cursor(_api, _txn.get(), _db_index);
 
-        auto const key_bytes = key_trait::to_bytes(key);
-        return ro_dup_view{std::move(*cursor), key_bytes};
+        auto const make_ro_dup_view
+            = [&key](auto &&cursor) -> LMDB_RESULT(ro_dup_view) {
+            auto const key_bytes = key_trait::to_bytes(key);
+            return ro_dup_view{std::move(cursor), key_bytes};
+        };
+
+        return LMDB_AND_THEN(std::move(cursor_or_error), make_ro_dup_view);
     }
 
 private:
     auto insert_impl(
         key_type const &key, value_type const &value, unsigned int flags)
-        -> std::expected<void, error_t>
+        -> LMDB_RESULT(void)
     {
         const auto key_bytes = key_trait::to_bytes(key);
         auto mdb_key = details::to_mdb_val(key_bytes);
         const auto value_bytes = value_trait::to_bytes(value);
         auto mdb_value = details::to_mdb_val(value_bytes);
 
-        if (auto const result
-            = _api.mdb_put(_txn.get(), _db_index, &mdb_key, &mdb_value, flags);
-            result != MDB_SUCCESS) {
-            return std::unexpected{error_t{result}};
-        }
+        LMDB_CALL_API(
+            _api.mdb_put(_txn.get(), _db_index, &mdb_key, &mdb_value, flags));
 
-        return {};
+        LMDB_REPORT_SUCCESS();
     }
 
-    auto commit() && noexcept -> std::expected<void, error_t>
+    auto commit() && LMDB_NOEXCEPT -> LMDB_RESULT(void)
     {
-        if (auto const result = commit_tx(_api, std::move(_txn)); !result) {
-            return std::unexpected{error_t{result.error()}};
-        }
-
-        return {};
+        return commit_tx(_api, std::move(_txn));
     }
 
 private:

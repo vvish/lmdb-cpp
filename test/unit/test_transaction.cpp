@@ -243,7 +243,7 @@ TEST_F(test_transaction, trivial_types_transaction_iterate)
 
     auto const &db_view = *result;
     auto const it = db_view.begin();
-    ASSERT_NE(it, db_view.end());
+    EXPECT_NE(it, db_view.end());
 }
 
 using test_trait_dup

@@ -1,15 +1,14 @@
 #pragma once
 
+#include "cpp_lmdb/error.hpp"
 #include "cpp_lmdb/types.hpp"
 
 // lmdb
 #include "lmdb.h"
 
 // std
-#include <expected>
 #include <memory>
 #include <span>
-#include <type_traits>
 
 namespace lmdb::details
 {
@@ -34,7 +33,9 @@ inline auto to_byte_span(MDB_val const &value) noexcept
 
 inline auto to_mdb_val(byte_span const &value) noexcept
 {
-    return MDB_val{value.size(), const_cast<std::byte *>(value.data())};
+    return MDB_val{
+        .mv_size = value.size(),
+        .mv_data = const_cast<std::byte *>(value.data())};
 }
 
 template <typename Trait>
@@ -53,37 +54,34 @@ struct txn_deleter {
     LmdbApi const &api;
 };
 
+template <class... Ts>
+struct overloaded : Ts... {
+    using Ts::operator()...;
+};
+
 template <typename LmdbApi>
 using txn_unique_ptr_t = std::unique_ptr<MDB_txn, txn_deleter<LmdbApi>>;
 
 template <typename LmdbApi>
 constexpr auto make_tx(
-    LmdbApi const &api, MDB_env &env, read_only_t const read_only)
-    -> std::expected<txn_unique_ptr_t<LmdbApi>, int>
+    LmdbApi const &api,
+    MDB_env &env,
+    read_only_t const read_only) LMDB_NOEXCEPT
+    -> LMDB_RESULT(txn_unique_ptr_t<LmdbApi>)
 {
     MDB_txn *txn{nullptr};
-    if (auto const result = api.mdb_txn_begin(
-            &env,
-            nullptr,
-            read_only == read_only_t::yes ? MDB_RDONLY : 0,
-            &txn);
-        result != MDB_SUCCESS) {
-        return std::unexpected{result};
-    }
+    LMDB_CALL_API(api.mdb_txn_begin(
+        &env, nullptr, read_only == read_only_t::yes ? MDB_RDONLY : 0, &txn));
 
     return txn_unique_ptr_t<LmdbApi>{txn, details::txn_deleter<LmdbApi>{api}};
 }
 
 template <typename LmdbApi>
 constexpr auto commit_tx(LmdbApi const &api, txn_unique_ptr_t<LmdbApi> &&tx)
-    -> std::expected<void, int>
+    LMDB_NOEXCEPT -> LMDB_RESULT(void)
 {
-    if (auto const result = api.mdb_txn_commit(tx.release());
-        result != MDB_SUCCESS) {
-        return std::unexpected{result};
-    }
-
-    return {};
+    LMDB_CALL_API(api.mdb_txn_commit(tx.release()));
+    LMDB_REPORT_SUCCESS();
 }
 
 template <typename LmdbApi>
@@ -102,14 +100,11 @@ using cursor_unique_ptr_t
 
 template <typename LmdbApi>
 constexpr auto make_cursor(
-    LmdbApi const &api, MDB_txn *const txn, MDB_dbi const dbi)
-    -> std::expected<cursor_unique_ptr_t<LmdbApi>, int>
+    LmdbApi const &api, MDB_txn *const txn, MDB_dbi const dbi) LMDB_NOEXCEPT
+    -> LMDB_RESULT(cursor_unique_ptr_t<LmdbApi>)
 {
     MDB_cursor *cursor{nullptr};
-    if (auto const result = api.mdb_cursor_open(txn, dbi, &cursor);
-        result != MDB_SUCCESS) {
-        return std::unexpected{result};
-    }
+    LMDB_CALL_API(api.mdb_cursor_open(txn, dbi, &cursor));
 
     return cursor_unique_ptr_t<LmdbApi>{cursor, cursor_deleter<LmdbApi>{api}};
 }

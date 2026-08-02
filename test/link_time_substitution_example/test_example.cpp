@@ -7,9 +7,6 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-// std
-#include <expected>
-
 namespace
 {
 // classes for technique demonstration

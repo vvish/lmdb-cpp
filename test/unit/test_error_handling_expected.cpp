@@ -7,6 +7,7 @@
 
 // std
 #include <type_traits>
+#include <utility>
 
 namespace cpp_lmdb_tests
 {
@@ -15,13 +16,28 @@ namespace
 {
 struct test_result {};
 
-void test_function_noexcept() LMDB_NOEXCEPT{};
+[[maybe_unused]] auto test_function_noexcept() LMDB_NOEXCEPT {};
 }  // namespace
 
 static_assert(std::is_same_v<
               LMDB_RESULT(test_result),
               std::expected<test_result, lmdb::error_t>>);
 static_assert(noexcept(test_function_noexcept()));
+
+static_assert(std::is_same_v<
+              decltype(lmdb::make_environment<lmdb::env_flags_t::none, 1>(
+                  "", lmdb::default_file_mode)),
+              std::expected<lmdb::rw_environment<>, lmdb::error_t>>);
+
+using db_trait
+    = lmdb::unique_key<lmdb::trivial_trait<int>, lmdb::trivial_trait<int>>;
+
+static_assert(std::is_same_v<
+              decltype(std::declval<lmdb::ro_environment<>>()
+                           .template open_ro_db<db_trait>("db")),
+              std::expected<
+                  lmdb::ro_db<db_trait, lmdb::details::api>,
+                  lmdb::error_t>>);
 
 TEST(error_handling_expected, report_error)
 {

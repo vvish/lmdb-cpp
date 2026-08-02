@@ -7,7 +7,6 @@
 #include "gtest/gtest.h"
 
 // std
-#include <cstring>
 #include <filesystem>
 
 using namespace ::testing;  // NOLINT(google-build-using-namespace)
