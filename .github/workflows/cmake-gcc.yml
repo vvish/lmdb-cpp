@@ -32,7 +32,7 @@ jobs:
 
     - name: Test
       working-directory: ${{env.BUILD_DIR}}
-      run: ctest -C ${{env.BUILD_TYPE}}
+      run: ctest -C ${{matrix.build_type}}
 
     - name: Generate coverage report
       if: ${{matrix.build_type == 'Debug'}}
