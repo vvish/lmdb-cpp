@@ -26,10 +26,8 @@ jobs:
 
     - name: Prepare environment
       run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
-        sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-20 main' && \
-        sudo apt update && \
-        sudo apt-get install clang-20 lldb-20 lld-20 libc++-20-dev libc++abi-20-dev
+        sudo apt-get update
+        sudo apt-get install -y clang-20 lld-20 libc++-20-dev libc++abi-20-dev
 
     - name: Configure CMake
       run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=${{env.CXX_COMPILER}} -DCMAKE_C_COMPILER=${{env.C_COMPILER}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
