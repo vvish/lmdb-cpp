@@ -7,8 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  CXX_COMPILER: clang++-20
-  C_COMPILER: clang-20
+  CLANG_VERSION: "20"
 
 jobs:
   build:
@@ -27,14 +26,14 @@ jobs:
     - name: Prepare environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang-20 lld-20 libc++-20-dev libc++abi-20-dev
+        sudo apt-get install -y clang-${CLANG_VERSION} lld-${CLANG_VERSION} libc++-${CLANG_VERSION}-dev libc++abi-${CLANG_VERSION}-dev
 
     - name: Configure CMake
-      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=${{env.CXX_COMPILER}} -DCMAKE_C_COMPILER=${{env.C_COMPILER}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=clang++-${CLANG_VERSION} -DCMAKE_C_COMPILER=clang-${CLANG_VERSION} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
     - name: Build
-      run: cmake --build ${{env.BUILD_DIR}} --config ${{matrix.build_type}}
+      run: cmake --build ${{env.BUILD_DIR}}
 
     - name: Test
       working-directory: ${{env.BUILD_DIR}}
-      run: ctest -C ${{matrix.build_type}}
+      run: ctest

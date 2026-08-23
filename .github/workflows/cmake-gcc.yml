@@ -7,8 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  CXX_COMPILER: g++-14
-  C_COMPILER: gcc-14
+  GCC_VERSION: "14"
 
 jobs:
   build:
@@ -25,14 +24,14 @@ jobs:
         submodules: recursive
 
     - name: Configure CMake
-      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=${{env.CXX_COMPILER}} -DCMAKE_C_COMPILER=${{env.C_COMPILER}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=g++-${GCC_VERSION} -DCMAKE_C_COMPILER=gcc-${GCC_VERSION} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
     - name: Build
-      run: cmake --build ${{env.BUILD_DIR}} --config ${{matrix.build_type}}
+      run: cmake --build ${{env.BUILD_DIR}}
 
     - name: Test
       working-directory: ${{env.BUILD_DIR}}
-      run: ctest -C ${{matrix.build_type}}
+      run: ctest
 
     - name: Generate coverage report
       if: ${{matrix.build_type == 'Debug'}}
@@ -41,10 +40,8 @@ jobs:
         set -eux
         python3 -m pip install --upgrade pip
         python3 -m pip install gcovr
-        g++-14 --version
-        gcov-14 --version
         gcovr --version
-        gcovr -r . --gcov-executable gcov-14 --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --lcov -o coverage.info
+        gcovr -r . --gcov-executable gcov-${GCC_VERSION} --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --lcov -o coverage.info
 
     - name: Upload coverage to Codecov
       if: ${{matrix.build_type == 'Debug'}}
