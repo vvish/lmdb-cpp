@@ -11,10 +11,6 @@
 // lmdb
 #include "lmdb.h"
 
-// std
-#include <concepts>
-#include <expected>
-
 namespace lmdb
 {
 namespace details
@@ -31,14 +27,17 @@ protected:
     using transaction = transaction<KeyValueTrait, ReadOnly, LmdbApi>;
 
     template <read_only_t ReadOnly>
-    auto make_transaction() const
-        -> std::expected<transaction<ReadOnly>, error_t>
+    auto make_transaction() const LMDB_NOEXCEPT
+        -> LMDB_RESULT(transaction<ReadOnly>)
     {
         auto txn = details::make_tx<LmdbApi>(_api, _env, ReadOnly);
-        if (!txn)
-            return std::unexpected{error_t{txn.error()}};
 
-        return transaction<ReadOnly>{_db_index, std::move(txn.value())};
+        auto const make_transaction
+            = [this](auto &&txn) -> LMDB_RESULT(transaction<ReadOnly>) {
+            return transaction<ReadOnly>{_db_index, std::move(txn)};
+        };
+
+        return LMDB_AND_THEN(std::move(txn), make_transaction);
     }
 
 private:
@@ -62,7 +61,8 @@ public:
 public:
     using base::base;
 
-    auto begin_ro_transaction() const -> std::expected<ro_transaction, error_t>
+    auto begin_ro_transaction() const LMDB_NOEXCEPT
+        -> LMDB_RESULT(ro_transaction)
     {
         return base::template make_transaction<read_only_t::yes>();
     }
@@ -79,13 +79,13 @@ public:
 public:
     using base::base;
 
-    auto begin_rw_transaction() -> std::expected<rw_transaction, error_t>
+    auto begin_rw_transaction() LMDB_NOEXCEPT -> LMDB_RESULT(rw_transaction)
     {
         return base::template make_transaction<read_only_t::no>();
     }
 
-    auto commit_transaction(rw_transaction &&transaction)
-        -> std::expected<void, error_t>
+    auto commit_transaction(rw_transaction &&transaction) LMDB_NOEXCEPT
+        -> LMDB_RESULT(void)
     {
         return std::move(transaction).commit();
     }

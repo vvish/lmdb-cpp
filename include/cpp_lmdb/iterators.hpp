@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cpp_lmdb/concepts.hpp"
 #include "cpp_lmdb/db_item.hpp"
 #include "cpp_lmdb/error.hpp"
 
@@ -10,7 +11,6 @@
 #include <expected>
 #include <iterator>
 #include <optional>
-#include <vector>
 
 namespace lmdb
 {
@@ -37,8 +37,7 @@ private:
 namespace details
 {
 template <
-    template <typename, typename, typename>
-    class Derived,
+    template <typename, typename, typename> class Derived,
     deserialization_trait KeyTrait,
     deserialization_trait ValueTrait,
     lmdb_api_like LmdbApi>

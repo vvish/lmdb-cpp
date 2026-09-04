@@ -3,6 +3,7 @@
 #include "cpp_lmdb/concepts.hpp"
 #include "cpp_lmdb/db_item.hpp"
 #include "cpp_lmdb/dbs.hpp"
+#include "cpp_lmdb/error.hpp"
 #include "cpp_lmdb/iterators.hpp"
 #include "cpp_lmdb/transactions.hpp"
 #include "cpp_lmdb/types.hpp"
@@ -18,9 +19,7 @@
 
 // std
 #include <concepts>
-#include <expected>
 #include <iterator>
-#include <optional>
 #include <utility>
 
 namespace lmdb
@@ -66,54 +65,63 @@ protected:
     using LmdbApiType = std::remove_reference_t<LmdbApi>;
 
     template <key_value_trait KeyValueTrait, read_only_t ReadOnly>
-    using open_db_result = std::expected<
-        std::conditional_t<
-            ReadOnly == read_only_t::yes,
-            ro_db<KeyValueTrait, LmdbApiType>,
-            rw_db<KeyValueTrait, LmdbApiType>>,
-        error_t>;
+    using open_db_result = std::conditional_t<
+        ReadOnly == read_only_t::yes,
+        ro_db<KeyValueTrait, LmdbApiType>,
+        rw_db<KeyValueTrait, LmdbApiType>>;
 
     template <key_value_trait KeyValueTrait, read_only_t ReadOnly>
     auto open_db(
         char const *const name,
         create_if_not_exists const create_flag
-        = create_if_not_exists::no) const
-        -> open_db_result<KeyValueTrait, ReadOnly>
+        = create_if_not_exists::no) const LMDB_NOEXCEPT
+        -> LMDB_RESULT((open_db_result<KeyValueTrait, ReadOnly>))
     {
         auto &api = _env.get_deleter().api;
-        auto transaction = make_tx(api, *_env, ReadOnly);
-        if (!transaction)
-            return std::unexpected{error_t{transaction.error()}};
 
-        const auto creation_flags
-            = key_value_trait_helper<KeyValueTrait>::db_key_value_flags()
-              | (create_flag == create_if_not_exists::yes ? MDB_CREATE : 0);
+        auto txn = make_tx(api, *_env, ReadOnly);
 
-        MDB_dbi db_index{};
-        LMDB_CALL_API(api.mdb_dbi_open(
-            transaction->get(), name, creation_flags, &db_index));
+        using result_type
+            = LMDB_RESULT((open_db_result<KeyValueTrait, ReadOnly>));
 
-        if constexpr (key_value_trait_helper<KeyValueTrait>::has_key_cmp_fun) {
-            LMDB_CALL_API(api.mdb_set_compare(
-                transaction->get(),
-                db_index,
-                cmp<typename KeyValueTrait::key_trait>));
-        }
+        auto const open_db =
+            [&env = _env, &api, name, create_flag](auto &&txn) -> result_type {
+            const auto creation_flags
+                = key_value_trait_helper<KeyValueTrait>::db_key_value_flags()
+                  | (create_flag == create_if_not_exists::yes ? MDB_CREATE
+                                                              : 0);
 
-        if constexpr (key_value_trait_helper<
-                          KeyValueTrait>::has_value_cmp_fun) {
-            LMDB_CALL_API(api.mdb_set_dupsort(
-                transaction->get(),
-                db_index,
-                cmp<typename KeyValueTrait::value_trait>));
-        }
+            MDB_dbi db_index{};
+            LMDB_CALL_API(
+                api.mdb_dbi_open(txn.get(), name, creation_flags, &db_index));
 
-        if (auto const result = commit_tx(api, std::move(transaction.value()));
-            !result)
-            return std::unexpected{error_t{result.error()}};
+            if constexpr (
+                key_value_trait_helper<KeyValueTrait>::has_key_cmp_fun) {
+                LMDB_CALL_API(api.mdb_set_compare(
+                    txn.get(),
+                    db_index,
+                    cmp<typename KeyValueTrait::key_trait>));
+            }
 
-        return typename open_db_result<KeyValueTrait, ReadOnly>::value_type{
-            api, db_index, *_env};
+            if constexpr (
+                key_value_trait_helper<KeyValueTrait>::has_value_cmp_fun) {
+                LMDB_CALL_API(api.mdb_set_dupsort(
+                    txn.get(),
+                    db_index,
+                    cmp<typename KeyValueTrait::value_trait>));
+            }
+
+            auto result = commit_tx(api, std::move(txn));
+
+            auto const make_db = [&env, &api, db_index]() -> result_type {
+                return open_db_result<KeyValueTrait, ReadOnly>{
+                    api, db_index, *env};
+            };
+
+            return LMDB_AND_THEN(std::move(result), make_db);
+        };
+
+        return LMDB_AND_THEN(std::move(txn), open_db);
     }
 
 private:
@@ -134,7 +142,7 @@ public:
 
     template <key_value_trait KeyValueTrait>
     auto open_ro_db(char const *const name) const noexcept
-        -> std::expected<ro_db<KeyValueTrait>, error_t>
+        -> LMDB_RESULT(ro_db<KeyValueTrait>)
     {
         return details::environment_base<
             LmdbApi>::template open_db<KeyValueTrait, read_only_t::yes>(name);
@@ -156,7 +164,7 @@ public:
         char const *const name,
         create_if_not_exists const create_flag
         = create_if_not_exists::no) noexcept
-        -> std::expected<rw_db<KeyValueTrait>, error_t>
+        -> LMDB_RESULT(rw_db<KeyValueTrait>)
     {
         return base::template open_db<KeyValueTrait, read_only_t::no>(
             name, create_flag);
@@ -179,8 +187,8 @@ template <
 auto make_environment(
     char const *const environment_path,
     db_file_mode_t const db_file_mode,
-    LmdbApi &&api = LmdbApi{})
-    LMDB_NOEXCEPT->LMDB_RESULT((environment_t<is_readonly(flags), LmdbApi>))
+    LmdbApi &&api = LmdbApi{}) LMDB_NOEXCEPT
+    -> LMDB_RESULT((environment_t<is_readonly(flags), LmdbApi>))
 {
     MDB_env *env{nullptr};
     LMDB_CALL_API(api.mdb_env_create(&env));
