@@ -23,8 +23,13 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Prepare environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-${{env.GCC_VERSION}} g++-${{env.GCC_VERSION}}
+
     - name: Configure CMake
-      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=g++-${GCC_VERSION} -DCMAKE_C_COMPILER=gcc-${GCC_VERSION} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=g++-${{env.GCC_VERSION}} -DCMAKE_C_COMPILER=gcc-${{env.GCC_VERSION}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
     - name: Build
       run: cmake --build ${{env.BUILD_DIR}}
@@ -41,7 +46,7 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install gcovr
         gcovr --version
-        gcovr -r . --gcov-executable gcov-${GCC_VERSION} --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --lcov -o coverage.info
+        gcovr -r . --gcov-executable gcov-${{env.GCC_VERSION}} --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --lcov -o coverage.info
 
     - name: Upload coverage to Codecov
       if: ${{matrix.build_type == 'Debug'}}

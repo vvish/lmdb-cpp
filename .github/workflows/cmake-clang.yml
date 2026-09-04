@@ -26,10 +26,10 @@ jobs:
     - name: Prepare environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang-${CLANG_VERSION} lld-${CLANG_VERSION} libc++-${CLANG_VERSION}-dev libc++abi-${CLANG_VERSION}-dev
+        sudo apt-get install -y clang-${{env.CLANG_VERSION}} lld-${{env.CLANG_VERSION}} libc++-${{env.CLANG_VERSION}}-dev libc++abi-${{env.CLANG_VERSION}}-dev
 
     - name: Configure CMake
-      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=clang++-${CLANG_VERSION} -DCMAKE_C_COMPILER=clang-${CLANG_VERSION} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=clang++-${{env.CLANG_VERSION}} -DCMAKE_C_COMPILER=clang-${{env.CLANG_VERSION}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
     - name: Build
       run: cmake --build ${{env.BUILD_DIR}}
