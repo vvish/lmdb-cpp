@@ -213,7 +213,7 @@ TEST_F(test_transaction, trivial_types_transaction_get_not_found)
 
 template <typename T>
 concept env_has_iterate_by_key_v
-    = requires(T t) { t.template iterate_by_key(std::declval<int>()); };
+    = requires(T t) { t.iterate_by_key(std::declval<int>()); };
 
 TEST_F(test_transaction, trivial_types_transaction_iterate)
 {
@@ -231,13 +231,7 @@ TEST_F(test_transaction, trivial_types_transaction_iterate)
         EXPECT_CALL(api, mdb_cursor_open(test_txn, test_dbi, _))
             .WillOnce(DoAll(SetArgPointee<2>(cursor), Return(MDB_SUCCESS)));
 
-        EXPECT_CALL(
-            api,
-            mdb_cursor_get(
-                cursor,
-                _,
-                _,
-                MDB_FIRST))
+        EXPECT_CALL(api, mdb_cursor_get(cursor, _, _, MDB_FIRST))
             .WillOnce(Return(MDB_SUCCESS));
 
         EXPECT_CALL(api, mdb_cursor_close(cursor));
@@ -247,7 +241,7 @@ TEST_F(test_transaction, trivial_types_transaction_iterate)
     const auto result = transaction.iterate();
     ASSERT_TRUE(result);
 
-    auto const& db_view = *result;
+    auto const &db_view = *result;
     auto const it = db_view.begin();
     ASSERT_NE(it, db_view.end());
 }
@@ -292,11 +286,11 @@ TEST_F(test_transaction, trivial_types_dup_iterate_by_key)
     const auto result = transaction.iterate_by_key(0x12345678);
     ASSERT_TRUE(result);
 
-    auto const& db_view = *result;
+    auto const &db_view = *result;
     auto const it = db_view.begin();
     ASSERT_NE(it, db_view.end());
 
-    auto const& db_item = *it;
+    auto const &db_item = *it;
     EXPECT_EQ(db_item.key(), 0x12345678);
     EXPECT_EQ(db_item.value(), 0x20000030);
 }

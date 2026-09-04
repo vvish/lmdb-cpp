@@ -7,8 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  CXX_COMPILER: g++-12
-  C_COMPILER: gcc-12
+  GCC_VERSION: "14"
 
 jobs:
   build:
@@ -24,23 +23,30 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Prepare environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-${{env.GCC_VERSION}} g++-${{env.GCC_VERSION}}
+
     - name: Configure CMake
-      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=${{env.CXX_COMPILER}} -DCMAKE_C_COMPILER=${{env.C_COMPILER}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+      run: cmake -B ${{env.BUILD_DIR}} -DCMAKE_CXX_COMPILER=g++-${{env.GCC_VERSION}} -DCMAKE_C_COMPILER=gcc-${{env.GCC_VERSION}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
     - name: Build
-      run: cmake --build ${{env.BUILD_DIR}} --config ${{matrix.build_type}}
+      run: cmake --build ${{env.BUILD_DIR}}
 
     - name: Test
       working-directory: ${{env.BUILD_DIR}}
-      run: ctest -C ${{env.BUILD_TYPE}}
+      run: ctest
 
     - name: Generate coverage report
       if: ${{matrix.build_type == 'Debug'}}
       working-directory: ${{github.workspace}}
       run: |
-        sudo apt-get install lcov
-        lcov --gcov-tool gcov-12 --base-directory . --directory ${{env.BUILD_DIR}} -c -o coverage.info
-        lcov --gcov-tool gcov-12 --remove coverage.info "test/*" -o coverage.info
+        set -eux
+        python3 -m pip install --upgrade pip
+        python3 -m pip install gcovr
+        gcovr --version
+        gcovr -r . --gcov-executable gcov-${{env.GCC_VERSION}} --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --lcov -o coverage.info
 
     - name: Upload coverage to Codecov
       if: ${{matrix.build_type == 'Debug'}}
@@ -49,3 +55,4 @@ jobs:
         fail_ci_if_error: true
         verbose: true
         files: coverage.info
+        token: ${{ secrets.CODECOV_TOKEN }}
