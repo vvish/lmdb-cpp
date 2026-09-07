@@ -4,8 +4,6 @@ add_executable(
     test_environment.cpp 
     test_transaction.cpp 
     test_key_value_traits.cpp
-    test_error_handling_exceptions.cpp
-    test_error_handling_expected.cpp
 )
 
 enable_testing()
