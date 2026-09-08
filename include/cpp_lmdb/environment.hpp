@@ -100,8 +100,8 @@ protected:
                 cmp<typename KeyValueTrait::key_trait>));
         }
 
-        if constexpr (key_value_trait_helper<
-                          KeyValueTrait>::has_value_cmp_fun) {
+        if constexpr (
+            key_value_trait_helper<KeyValueTrait>::has_value_cmp_fun) {
             LMDB_CALL_API(api.mdb_set_dupsort(
                 transaction->get(),
                 db_index,
@@ -179,8 +179,8 @@ template <
 auto make_environment(
     char const *const environment_path,
     db_file_mode_t const db_file_mode,
-    LmdbApi &&api = LmdbApi{})
-    LMDB_NOEXCEPT->LMDB_RESULT((environment_t<is_readonly(flags), LmdbApi>))
+    LmdbApi &&api = LmdbApi{}) noexcept
+    -> std::expected<environment_t<is_readonly(flags), LmdbApi>, error_t>
 {
     MDB_env *env{nullptr};
     LMDB_CALL_API(api.mdb_env_create(&env));
