@@ -311,7 +311,13 @@ TEST_F(test_transaction, trivial_types_transaction_lower_bound)
         EXPECT_CALL(api, mdb_cursor_open(test_txn, test_dbi, _))
             .WillOnce(DoAll(SetArgPointee<2>(cursor), Return(MDB_SUCCESS)));
 
-        EXPECT_CALL(api, mdb_cursor_get(cursor, Pointee(MdbValBytesAre{0x78, 0x56, 0x34, 0x12}), _, MDB_SET_RANGE))
+        EXPECT_CALL(
+            api,
+            mdb_cursor_get(
+                cursor,
+                Pointee(MdbValBytesAre{0x78, 0x56, 0x34, 0x12}),
+                _,
+                MDB_SET_RANGE))
             .WillOnce(DoAll(
                 SetArgPointee<2>(
                     MDB_val{test_value.size(), test_value.data()}),
@@ -324,11 +330,11 @@ TEST_F(test_transaction, trivial_types_transaction_lower_bound)
     const auto result = transaction.lower_bound(0x12345678);
     ASSERT_TRUE(result);
 
-    auto const& db_view = *result;
+    auto const &db_view = *result;
     auto const it = db_view.begin();
-    EXPECT_NE(it, db_view.end());
+    ASSERT_NE(it, db_view.end());
 
-    auto const& key_value = *it;
+    auto const &key_value = *it;
     EXPECT_EQ(key_value.key(), 0x12345678);
     EXPECT_EQ(key_value.value(), 0x20000030);
 }
