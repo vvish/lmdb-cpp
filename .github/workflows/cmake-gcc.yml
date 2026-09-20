@@ -49,10 +49,17 @@ jobs:
         gcovr -r . --gcov-executable gcov-${{env.GCC_VERSION}} --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --lcov -o coverage.info
 
     - name: Upload coverage to Codecov
-      if: ${{matrix.build_type == 'Debug'}}
-      uses: codecov/codecov-action@v3
+      if: ${{matrix.build_type == 'Debug' && github.event_name != 'pull_request'}}
+      uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: true
         verbose: true
         files: coverage.info
         token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Store coverage for fork PR upload
+      if: ${{matrix.build_type == 'Debug' && github.event_name == 'pull_request'}}
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage.info
