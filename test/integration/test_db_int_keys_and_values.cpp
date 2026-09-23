@@ -1,5 +1,4 @@
 #include "cpp_lmdb/cpp_lmdb.hpp"
-
 #include "test_utils.hpp"
 
 // gtest
@@ -43,6 +42,8 @@ TEST(integration_test, db_int_keys_and_values_unique_key)
 
     EXPECT_TRUE(transaction->insert(0xAA, 2000));
     EXPECT_TRUE(transaction->insert(0xBB, 5000));
+    EXPECT_TRUE(transaction->insert(0xCC, 8000));
+
     {
         auto const result = transaction->try_insert(0xAA, 3000);
         ASSERT_FALSE(result);
@@ -58,7 +59,11 @@ TEST(integration_test, db_int_keys_and_values_unique_key)
         ASSERT_TRUE(result);
         EXPECT_EQ(*result, 5000);
     }
-
+    {
+        const auto result = transaction->get(0xCC);
+        ASSERT_TRUE(result);
+        EXPECT_EQ(*result, 8000);
+    }
     {
         ASSERT_TRUE(transaction->insert(0xBB, 10000));
         const auto result = transaction->get(0xBB);
@@ -66,7 +71,7 @@ TEST(integration_test, db_int_keys_and_values_unique_key)
         EXPECT_EQ(*result, 10000);
     }
 
-    rw_db->commit_transaction(std::move(*transaction));
+    ASSERT_TRUE(rw_db->commit_transaction(std::move(*transaction)));
     {
         auto ro_tx = rw_db->begin_ro_transaction();
         ASSERT_TRUE(ro_tx);
@@ -80,6 +85,11 @@ TEST(integration_test, db_int_keys_and_values_unique_key)
             ASSERT_TRUE(result);
             EXPECT_EQ(*result, 10000);
         }
+        {
+            const auto result = ro_tx->get(0xCC);
+            ASSERT_TRUE(result);
+            EXPECT_EQ(*result, 8000);
+        }
     }
     {
         auto ro_tx = rw_db->begin_ro_transaction();
@@ -87,7 +97,11 @@ TEST(integration_test, db_int_keys_and_values_unique_key)
 
         EXPECT_THAT(
             cpp_lmdb_tests::get_all_values(ro_tx->iterate().value()),
-            ElementsAre(2000, 10000));
+            ElementsAre(2000, 10000, 8000));
+
+        EXPECT_THAT(
+            cpp_lmdb_tests::get_all_values(ro_tx->lower_bound(0xBB).value()),
+            UnorderedElementsAre(10000, 8000));
     }
 }
 
