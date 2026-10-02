@@ -34,16 +34,16 @@ private:
 };
 
 template <std::input_iterator Iterator, lmdb_api_like LmdbApi>
-class db_dup_view
-    : public std::ranges::view_interface<db_dup_view<Iterator, LmdbApi>> {
+class db_view_from_key
+    : public std::ranges::view_interface<db_view_from_key<Iterator, LmdbApi>> {
 public:
-    explicit db_dup_view(
+    explicit db_view_from_key(
         details::cursor_unique_ptr_t<LmdbApi> &&cursor, byte_span const &key)
         : _cursor{std::move(cursor)}, _key{key.begin(), key.end()}
     {}
 
-    db_dup_view(db_dup_view &&) = default;
-    auto operator=(db_dup_view &&) -> db_dup_view & = default;
+    db_view_from_key(db_view_from_key &&) = default;
+    auto operator=(db_view_from_key &&) -> db_view_from_key & = default;
 
     auto begin() const
     {

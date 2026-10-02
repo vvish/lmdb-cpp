@@ -128,6 +128,14 @@ public:
         base::navigate_cursor(MDB_FIRST, nullptr);
     }
 
+    explicit ro_iterator(
+        LmdbApi const &api, MDB_cursor &cursor, byte_span const &key) noexcept
+        : base{api, cursor}
+    {
+        auto db_key = details::to_mdb_val(key);
+        base::navigate_cursor(MDB_SET_RANGE, &db_key);
+    }
+
     ro_iterator(ro_iterator &&) = default;
     auto operator=(ro_iterator &&) -> ro_iterator & = default;
 

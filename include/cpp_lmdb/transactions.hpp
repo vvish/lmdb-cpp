@@ -3,8 +3,8 @@
 #include "cpp_lmdb/concepts.hpp"
 #include "cpp_lmdb/db_item.hpp"
 #include "cpp_lmdb/iterators.hpp"
-#include "cpp_lmdb/views.hpp"
 #include "cpp_lmdb/types.hpp"
+#include "cpp_lmdb/views.hpp"
 
 // details
 #include "cpp_lmdb/details/details.hpp"
@@ -38,13 +38,17 @@ public:
 
     using ro_view
         = db_view<ro_iterator<key_trait, value_trait, LmdbApi>, LmdbApi>;
-    using ro_dup_view = db_dup_view<
+    using ro_view_from_key = db_view_from_key<
+        ro_iterator<key_trait, value_trait, LmdbApi>,
+        LmdbApi>;
+    using ro_view_by_key = db_view_from_key<
         ro_dup_iterator<key_trait, value_trait, LmdbApi>,
         LmdbApi>;
 
 public:
     transaction(
-        MDB_dbi const db_index, details::txn_unique_ptr_t<LmdbApi> &&txn) noexcept
+        MDB_dbi const db_index,
+        details::txn_unique_ptr_t<LmdbApi> &&txn) noexcept
         : _db_index{db_index}
         , _txn{std::move(txn)}
         , _api{_txn.get_deleter().api}
@@ -90,6 +94,17 @@ public:
         return {};
     }
 
+    auto lower_bound(key_type const &key) const noexcept
+        -> std::expected<ro_view_from_key, error_t>
+    {
+        auto cursor = details::make_cursor(_api, _txn.get(), _db_index);
+        if (!cursor)
+            return std::unexpected{error_t{cursor.error()}};
+
+        auto const key_bytes = key_trait::to_bytes(key);
+        return ro_view_from_key{std::move(*cursor), key_bytes};
+    }
+
     auto get(key_type const &key) const noexcept
         -> std::expected<value_type, error_t>
         requires(!details::key_value_trait_helper<
@@ -120,7 +135,7 @@ public:
     }
 
     auto iterate_by_key(key_type const &key) const noexcept
-        -> std::expected<ro_dup_view, error_t>
+        -> std::expected<ro_view_by_key, error_t>
         requires(
             details::key_value_trait_helper<KeyValueTrait>::duplicates_enabled)
     {
@@ -129,7 +144,7 @@ public:
             return std::unexpected{error_t{cursor.error()}};
 
         auto const key_bytes = key_trait::to_bytes(key);
-        return ro_dup_view{std::move(*cursor), key_bytes};
+        return ro_view_by_key{std::move(*cursor), key_bytes};
     }
 
 private:
