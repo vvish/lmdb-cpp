@@ -28,7 +28,7 @@ jobs:
       with:
         fail_ci_if_error: true
         verbose: true
-        files: coverage/coverage.info
+        files: coverage/coverage.xml
         token: ${{secrets.CODECOV_TOKEN}}
         override_commit: ${{github.event.workflow_run.head_sha}}
         override_pr: ${{github.event.workflow_run.pull_requests[0].number}}
