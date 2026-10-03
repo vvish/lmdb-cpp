@@ -46,7 +46,7 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install gcovr
         gcovr --version
-        gcovr -r . --gcov-executable gcov-${{env.GCC_VERSION}} --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --lcov -o coverage.info
+        gcovr -r . --gcov-executable gcov-${{env.GCC_VERSION}} --object-directory ${{env.BUILD_DIR}} --exclude 'test/.*' --exclude '3p/.*' --root "$GITHUB_WORKSPACE" --lcov -o coverage.info
 
     - name: Upload coverage to Codecov
       if: ${{matrix.build_type == 'Debug' && github.event_name != 'pull_request'}}
