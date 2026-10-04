@@ -51,6 +51,11 @@ TEST(
         ASSERT_TRUE(ro_tx);
 
         EXPECT_THAT(
+            cpp_lmdb_tests::get_all_values(
+                ro_tx->iterate_by_key(0xBB).value()),
+            ElementsAre(5001, 5002));
+
+        EXPECT_THAT(
             cpp_lmdb_tests::get_all_values(ro_tx->lower_bound(0xBB).value()),
             ElementsAre(5001, 5002, 10000));
     }

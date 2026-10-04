@@ -41,8 +41,21 @@ template <
     size_t Index,
     deserialization_trait KeyTrait,
     deserialization_trait ValueTrait>
-std::tuple_element_t<Index, ro_db_item<KeyTrait, ValueTrait>> get(
-    ro_db_item<KeyTrait, ValueTrait> const &item)
+auto get(ro_db_item<KeyTrait, ValueTrait> const &item)
+    -> std::tuple_element_t<Index, ro_db_item<KeyTrait, ValueTrait>>
+{
+    if constexpr (Index == 0)
+        return item.key();
+    if constexpr (Index == 1)
+        return item.value();
+}
+
+template <
+    size_t Index,
+    deserialization_trait KeyTrait,
+    deserialization_trait ValueTrait>
+auto get(ro_db_item<KeyTrait, ValueTrait> &item)
+    -> std::tuple_element_t<Index, ro_db_item<KeyTrait, ValueTrait>>
 {
     if constexpr (Index == 0)
         return item.key();

@@ -10,7 +10,6 @@
 #include <expected>
 #include <iterator>
 #include <optional>
-#include <vector>
 
 namespace lmdb
 {
@@ -37,8 +36,7 @@ private:
 namespace details
 {
 template <
-    template <typename, typename, typename>
-    class Derived,
+    template <typename, typename, typename> class Derived,
     deserialization_trait KeyTrait,
     deserialization_trait ValueTrait,
     lmdb_api_like LmdbApi>
@@ -167,7 +165,7 @@ public:
         LmdbApi const &api, MDB_cursor &cursor, byte_span const &key) noexcept
         : base{api, cursor}, _key{details::to_mdb_val(key)}
     {
-        base::navigate_cursor(MDB_FIRST_DUP, &_key);
+        base::navigate_cursor(MDB_SET, &_key);
     }
 
     ro_dup_iterator(ro_dup_iterator &&) = default;

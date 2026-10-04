@@ -273,7 +273,7 @@ TEST_F(test_transaction, trivial_types_dup_iterate_by_key)
                 cursor,
                 Pointee(MdbValBytesAre{0x78, 0x56, 0x34, 0x12}),
                 _,
-                MDB_FIRST_DUP))
+                MDB_SET))
             .WillOnce(DoAll(
                 SetArgPointee<2>(
                     MDB_val{test_value.size(), test_value.data()}),

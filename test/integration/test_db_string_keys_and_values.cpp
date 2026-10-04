@@ -1,5 +1,4 @@
 #include "cpp_lmdb/cpp_lmdb.hpp"
-
 #include "test_utils.hpp"
 
 // gtest
@@ -15,12 +14,10 @@ using namespace ::testing;  // NOLINT(google-build-using-namespace)
 namespace cpp_lmdb_tests
 {
 
-using test_trait = lmdb::
-    unique_key<lmdb::string_trait, lmdb::string_trait>;
+using test_trait = lmdb::unique_key<lmdb::string_trait, lmdb::string_trait>;
 
 using ro_view
     = lmdb::ro_environment<>::ro_db<test_trait>::ro_transaction::ro_view;
-
 
 TEST(integration_test, db_string_keys_and_values_unique_key)
 {
@@ -67,7 +64,7 @@ TEST(integration_test, db_string_keys_and_values_unique_key)
         EXPECT_EQ(*result, "JKL");
     }
 
-    rw_db->commit_transaction(std::move(*transaction));
+    ASSERT_TRUE(rw_db->commit_transaction(std::move(*transaction)));
     {
         auto ro_tx = rw_db->begin_ro_transaction();
         ASSERT_TRUE(ro_tx);

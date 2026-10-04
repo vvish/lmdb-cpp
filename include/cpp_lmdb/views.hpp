@@ -3,6 +3,7 @@
 #include "cpp_lmdb/iterators.hpp"
 
 #include <ranges>
+#include <vector>
 
 namespace lmdb
 {
