@@ -23,6 +23,12 @@ jobs:
         repository: ${{github.repository}}
         run-id: ${{github.event.workflow_run.id}}
 
+    - name: Checkout pull request source
+      uses: actions/checkout@v4
+      with:
+        repository: ${{github.event.workflow_run.head_repository.full_name}}
+        ref: ${{github.event.workflow_run.head_sha}}
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
