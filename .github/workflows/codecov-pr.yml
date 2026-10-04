@@ -23,12 +23,18 @@ jobs:
         repository: ${{github.repository}}
         run-id: ${{github.event.workflow_run.id}}
 
+    - name: Checkout pull request source
+      uses: actions/checkout@v4
+      with:
+        repository: ${{github.event.workflow_run.head_repository.full_name}}
+        ref: ${{github.event.workflow_run.head_sha}}
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: true
         verbose: true
-        files: coverage/coverage.info
+        files: coverage/coverage.xml
         token: ${{secrets.CODECOV_TOKEN}}
         override_commit: ${{github.event.workflow_run.head_sha}}
         override_pr: ${{github.event.workflow_run.pull_requests[0].number}}
